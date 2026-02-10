@@ -1,0 +1,237 @@
+html, body {
+	height: 100%;
+	background: #000000;
+	margin: 0;
+	padding: 0;
+}
+
+::selection {
+    background: #797A59;
+    color: #FFF;
+}
+
+::-moz-selection {
+    background: #00F;
+    color: #FFF;
+}
+
+#leftcolumn {
+	width: 4%;
+	height: auto !important;
+	height: 100%;
+	min-height: 100%;
+	padding: 0;
+	float: left;
+	background-color: #000000;
+	background: url("../img/bar2.png");
+	background-repeat: repeat-y;
+	background-size: cover;
+	-moz-animation: movy 360s linear infinite; /* Firefox */
+	-webkit-animation: movy 360s linear infinite; /* Safari and Chrome */
+	-o-animation: movy 360s linear infinite; /* Opera */
+	-ms-animation: movy 360s linear infinite; /* IE 10 */
+	animation: movy 360s linear infinite;
+}
+
+@media only screen and (max-width: 800px) {
+	#leftcolumn {
+		width: 7%;
+		}
+}
+
+@-moz-keyframes movy /* Firefox */
+	{
+	0% {background-position: 0px 0px; }
+	100% {background-position: 0px -21000px;}
+	}
+ 
+@-webkit-keyframes movy /* Safari and Chrome */
+	{
+	0% {background-position: 0px 0px; }
+	100% {background-position: 0px -21000px;}
+	}
+ 
+@-o-keyframes movy /* Opera */
+	{
+	0% {background-position: 0px 0px; }
+	100% {background-position: 0px -21000px;}
+	} 
+ 
+@-ms-keyframes movy /* IE 10 */
+	{
+	0% {background-position: 0px 0px; }
+	100% {background-position: 0px -21000px;}
+	} 
+ 
+@keyframes movy
+	{
+ 	0% {background-position: 0px 0px; }
+	100% {background-position: 0px -21000px;}
+	}
+	
+#discount_rund {
+	position: fixed;
+    top: 7.5%;
+    right: 12%;
+    width: 9vw;
+    height: 9vw;
+    margin: 0;
+	z-index: 1;
+}
+
+@media only screen and (max-width: 800px) {
+	#discount_rund {
+		top: 10%;
+    	right: 10%;
+		width: 15vw;
+    	height: 15vw;
+		}
+}
+
+.contentbox1, .contentbox2 {
+	display: -webkit-flex;
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+	-webkit-align-items: center;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	align-items: center;
+	min-height:50%;
+	height: auto !important;
+	height:50%;
+	width: 96%;
+	min-width: 96%;
+	margin-left: 4%;
+	float: none;
+}
+
+@media only screen and (max-width: 800px) {
+	.contentbox1, .contentbox2 {
+		min-width: 93%;
+		width: 93%;
+		margin: 0 0 0 7%;
+		}
+}
+
+.contentbox1  {
+	background-color: #7C7A68;
+}
+
+.contentbox2  {
+	background-color: #000;
+}
+
+.bigtext {
+	font-family: "Geist", sans-serif;
+	font-size:17.5vw;
+	width:100%;
+	justify-content:center;
+	display:flex;
+	letter-spacing:-27px;
+	font-weight: 500
+}
+
+a {
+	display: block;
+	height: 100%;
+	width: 100%;
+	cursor: crosshair;
+}
+
+.contentbox1 a {
+	color: #000;
+	}
+	
+.contentbox2 a {
+	color: #FFF;
+	} 
+
+a:link {
+	text-decoration: none;
+	}
+
+.contentbox1 a:visited {
+	color: #000;
+	text-decoration: none;
+	}
+	
+.contentbox2 a:visited {
+	color: #FFF;
+	text-decoration: none;
+	}
+
+.contentbox1 a:hover, a:active {
+	color: #92CA00;
+	text-decoration: none;
+}
+
+.contentbox2 a:hover, a:active {
+	color: #92CA00;
+	text-decoration: none;
+}
+
+.effect:hover {
+	text-decoration: none;
+	animation: blur 0.5s infinite forwards;
+	-moz-animation: blur 0.5s infinite forwards; /* Firefox */
+	-webkit-animation: blur 0.5s infinite forwards; /* Safari and Chrome */
+	-o-animation: blur 0.5s infinite forwards; /* Opera */
+	-ms-animation: blur 0.5s infinite forwards; /* IE 10 */
+}
+
+@keyframes blur {
+    0% { filter: blur(0vw);}
+	500% { filter: blur(10vw);}
+}
+
+@-moz-keyframes blur {
+    0% { -moz-filter: blur(0vw);}
+	500% { -moz-filter: blur(10vw);}
+}
+
+@-webkit-keyframes blur {
+    0% { -webkit-filter: blur(0vw);}
+	500% { -webkit-filter: blur(10vw);}
+}
+
+@-o-keyframes blur {
+    0% { -o-filter: blur(0vw);}
+	500% { -o-filter: blur(10vw);}
+}
+
+@-ms-keyframes blur {
+    0% { -ms-filter: blur(0vw);}
+	500% { -ms-filter: blur(10vw);}
+}
+
+@media only screen and (max-width: 800px) {
+	@keyframes blur {
+   		 0% { filter: blur(0vw);}
+		500% { filter: blur(10vw);}
+	}
+
+	@-moz-keyframes blur {
+  		0% { -moz-filter: blur(0vw);}
+		500% { -moz-filter: blur(10vw);}
+	}
+
+	@-webkit-keyframes blur {
+   		0% { -webkit-filter: blur(0vw);}
+	500% { -webkit-filter: blur(10vw);}
+	}
+
+	@-o-keyframes blur {
+		0% { -o-filter: blur(0vw);}
+		500% { -o-filter: blur(10vw);}
+	}
+
+	@-ms-keyframes blur {
+		0% { -ms-filter: blur(0vw);}
+		500% { -ms-filter: blur(10vw);}
+	}
+}
+
+.clearfix { 
+	clear: both;
+}
