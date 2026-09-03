@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GENDEMA®</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Notch:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="cursor-face.png">
+<style>
+:root{
+  --bg:#0b0c0a;
+  --bg-panel:#14160f;
+  --fg:#c7c8bf;
+  --fg-dim:#8d8f83;
+  --fg-faint:#4a4c42;
+  --line:#242619;
+  --line-strong:#383c28;
+  --accent:#8a9a4e;
+  --accent-dim:#20260f;
+  --accent-fg:#0b0c0a;
+  --f:'Stack Sans Notch','Arial Black',sans-serif;
+  --sans-alt:Helvetica,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--fg-dim);font-family:var(--f);cursor:none;letter-spacing:-.02em;}
+::selection{background:var(--accent);color:var(--accent-fg);}
+a{color:inherit;}
+button{font-family:var(--f);}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important;}}
+
+/* CURSOR */
+/* LOADER — brief, deliberately fake, on-brand welcome screen */
+#loader{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .6s ease,transform .7s cubic-bezier(.65,0,.35,1);}
+#loader.done{opacity:0;transform:scale(1.06);pointer-events:none;}
+.loader-frame{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;}
+.loader-ring{position:absolute;inset:0;width:150px;height:150px;}
+#loaderArc{transition:stroke-dashoffset .15s linear;}
+.loader-face{width:128px;height:128px;border-radius:50%;object-fit:cover;}
+.loader-coord{font-family:var(--sans-alt);font-size:.68rem;letter-spacing:.08em;color:var(--fg-faint);}
+
+/* CROSSHAIR CURSOR — two full-bleed lines that track the mouse, with a live coordinate
+   readout, matching the reference site's precision-instrument feel */
+#cur-h{position:fixed;left:0;right:0;height:1px;background:rgba(138,154,78,.4);pointer-events:none;z-index:9999;transition:background .15s,opacity .15s;}
+#cur-v{position:fixed;top:0;bottom:0;width:1px;background:rgba(138,154,78,.4);pointer-events:none;z-index:9999;transition:background .15s,opacity .15s;}
+#cur-h.hot,#cur-v.hot{background:var(--accent);}
+#cur-coord{position:fixed;pointer-events:none;z-index:9999;font-family:var(--sans-alt);font-size:.62rem;letter-spacing:.02em;color:var(--accent);transform:translate(12px,-16px);white-space:nowrap;transition:opacity .15s;}
+.cur-hidden{opacity:0!important;}
+body.on-contact #cur-h,body.on-contact #cur-v{background:rgba(199,200,191,.6)!important;}
+body.on-contact #cur-coord{color:var(--fg)!important;}
+
+/* SHELL */
+#topbar{position:fixed;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:60;background:var(--bg);border-bottom:1px solid var(--line);}
+#topbar .logo{font-size:1.05rem;font-weight:900;letter-spacing:-.02em;color:var(--fg);}
+#topbar nav{display:flex;align-items:center;gap:26px;}
+#topbar nav a{font-size:.82rem;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;color:var(--fg-dim);position:relative;padding-bottom:3px;transition:color .15s;}
+#topbar nav a::after{content:'';position:absolute;left:0;right:100%;bottom:0;height:1px;background:var(--accent);transition:right .25s cubic-bezier(.65,0,.35,1);}
+#topbar nav a:hover,#topbar nav a.active{color:var(--fg);}
+#topbar nav a:hover::after,#topbar nav a.active::after{right:0;}
+#supportBtn{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:transparent;border:1px solid var(--accent);padding:8px 16px;cursor:none;transition:background .12s,color .12s;}
+#supportBtn:hover{background:var(--accent);color:var(--accent-fg);}
+#mob-menu-btn{display:none;background:none;border:1px solid var(--line-strong);padding:8px 10px;cursor:pointer;flex-direction:column;gap:5px;}
+#mob-menu-btn span{display:block;width:18px;height:2px;background:var(--fg);}
+
+#stage{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;}
+.page{position:absolute;inset:0;padding-top:64px;opacity:0;pointer-events:none;transition:opacity .45s ease;overflow-y:auto;}
+.page.active{opacity:1;pointer-events:all;}
+
+/* ===== HERO / DISCOGRAPHY CAROUSEL ===== */
+#hero{overflow:hidden;padding-top:0;}
+.hero-stage{position:absolute;inset:0;overflow:hidden;}
+.h-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform .7s cubic-bezier(.65,0,.35,1);}
+.h-lights{position:absolute;inset:0;z-index:0;overflow:hidden;filter:blur(70px);opacity:.5;pointer-events:none;transition:transform .2s ease-out;}
+.light{position:absolute;border-radius:50%;mix-blend-mode:screen;}
+.l1{width:40vw;height:40vw;background:var(--c1);top:-10%;left:-8%;animation:driftA 8s ease-in-out infinite;}
+.l2{width:32vw;height:32vw;background:var(--c2);bottom:-12%;right:2%;animation:driftB 9.5s ease-in-out infinite;}
+.l3{width:26vw;height:26vw;background:var(--c3);top:32%;right:22%;animation:driftC 7s ease-in-out infinite;}
+@keyframes driftA{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(14vw,10vh) scale(1.2);}}
+@keyframes driftB{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-12vw,-13vh) scale(1.15);}}
+@keyframes driftC{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(10vw,-9vh) scale(.85);}}
+.h-title{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;font-size:clamp(3.4rem,16vw,13.5rem);font-weight:900;letter-spacing:-.04em;line-height:.8;text-align:center;text-transform:uppercase;color:var(--fg);opacity:.9;user-select:none;transition:transform .1s ease-out;}
+.h-cover-btn{position:relative;z-index:2;border:1px solid var(--line-strong);background:none;padding:0;cursor:none;width:min(46vh,46vw);aspect-ratio:1;overflow:hidden;transition:transform .1s ease-out;}
+.h-cover{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.92) contrast(1.02);}
+.h-play-hint{position:absolute;left:0;right:0;bottom:0;height:50%;z-index:3;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 12px;font-size:clamp(1rem,2.4vw,1.6rem);font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:var(--accent-fg);background:var(--accent);opacity:0;transform:translateY(100%);transition:opacity .2s,transform .28s cubic-bezier(.77,0,.18,1);}
+.h-cover-btn:hover .h-play-hint{opacity:1;transform:translateY(0);}
+.h-cover-col{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;transition:transform .1s ease-out;}
+.h-buy-sm{font-size:.64rem;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-dim);border:1px solid var(--line-strong);padding:7px 14px;text-decoration:none;transition:color .12s,border-color .12s;}
+.h-buy-sm:hover{color:var(--accent);border-color:var(--accent);}
+.h-meta{position:absolute;left:28px;bottom:70px;z-index:4;display:flex;flex-direction:column;gap:3px;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-faint);}
+.h-meta .h-year{color:var(--fg-dim);}
+
+.h-nav{position:absolute;left:0;right:0;bottom:24px;z-index:5;display:flex;align-items:center;justify-content:center;}
+.h-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;background:none;border:1px solid var(--line-strong);color:var(--fg);width:44px;height:44px;cursor:none;font-size:1.05rem;transition:border-color .12s,color .12s;}
+.h-arrow:hover{border-color:var(--accent);color:var(--accent);}
+.h-arrow-l{left:24px;}
+.h-arrow-r{right:24px;}
+.h-counter{font-family:var(--sans-alt);font-size:.76rem;letter-spacing:.04em;color:var(--fg-faint);}
+
+/* PLAYER DRAWER */
+#playerDrawer{position:fixed;left:0;right:0;bottom:0;transform:translateY(100%);transition:transform .45s cubic-bezier(.65,0,.35,1);z-index:80;background:var(--bg-panel);border-top:2px solid var(--accent);}
+#playerDrawer.open{transform:translateY(0);}
+#playerDrawer.minimized{transform:translateY(calc(100% - 52px));}
+.player-head{height:52px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;padding:0 24px;max-width:640px;margin:0 auto;cursor:pointer;}
+.player-head span{font-size:.9rem;text-transform:uppercase;letter-spacing:.02em;color:var(--fg);font-weight:900;}
+.player-head-btns{display:flex;gap:8px;}
+.player-head-btns button{background:none;border:1px solid var(--line-strong);color:var(--fg);width:30px;height:30px;cursor:pointer;font-size:.9rem;line-height:1;}
+.player-head-btns button:hover{border-color:var(--accent);color:var(--accent);}
+.player-inner{max-width:640px;margin:0 auto;padding:0 24px 24px;}
+#playerFrame{width:100%;height:350px;border:0;display:block;}
+
+/* SUPPORT DRAWER */
+#supportDrawer{position:fixed;top:0;right:0;bottom:0;width:min(380px,88vw);transform:translateX(100%);transition:transform .4s cubic-bezier(.65,0,.35,1);z-index:80;background:var(--bg-panel);border-left:2px solid var(--accent);padding:80px 30px 30px;overflow-y:auto;}
+#supportDrawer.open{transform:translateX(0);}
+#supportDrawer h3{font-size:1.4rem;font-weight:900;text-transform:uppercase;letter-spacing:-.02em;color:var(--fg);margin-bottom:18px;}
+#supportDrawer p{font-size:.88rem;line-height:1.6;color:var(--fg-dim);margin-bottom:20px;}
+#supportClose{position:absolute;top:26px;right:26px;background:none;border:1px solid var(--line-strong);color:var(--fg);width:32px;height:32px;cursor:pointer;}
+#supportClose:hover{border-color:var(--accent);color:var(--accent);}
+.sup-block{margin-bottom:26px;}
+.sup-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-faint);margin-bottom:10px;}
+.btc-addr{font-family:var(--sans-alt);font-size:.72rem;word-break:break-all;color:var(--accent);padding:11px;border:1px solid var(--line-strong);background:var(--bg);margin-bottom:10px;}
+.sup-btn{display:block;width:100%;text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.02em;padding:12px 0;border:1px solid var(--accent);color:var(--accent);background:transparent;text-decoration:none;cursor:none;transition:background .1s,color .1s;}
+.sup-btn:hover,.sup-btn.ok{background:var(--accent);color:var(--accent-fg);}
+.sup-btn.solid{background:var(--accent);color:var(--accent-fg);}
+.sup-btn.solid:hover{background:transparent;color:var(--accent);}
+
+/* MALVINAS easter egg */
+.malvinas-wrap{position:relative;display:inline-block;margin-top:20px;cursor:none;}
+.malvinas-img{width:190px;height:auto;display:block;opacity:.6;filter:grayscale(1);transition:opacity .2s,filter .2s;}
+.malvinas-wrap:hover .malvinas-img{opacity:1;filter:grayscale(0) drop-shadow(0 0 10px var(--accent));}
+#malvinas-tip{position:absolute;top:calc(100% + 8px);right:0;pointer-events:none;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);white-space:nowrap;opacity:0;transition:opacity .15s;}
+.malvinas-wrap:hover #malvinas-tip{opacity:1;}
+
+/* ===== DESIGN ===== */
+.sec-head{padding:36px 32px 20px;border-bottom:2px solid var(--line-strong);display:flex;align-items:flex-end;justify-content:space-between;gap:20px;}
+.hire-badge{font-size:.76rem;text-transform:uppercase;letter-spacing:.03em;color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;white-space:nowrap;transition:border-color .12s;}
+.hire-badge:hover{border-bottom-color:var(--accent);}
+.sec-head .sec-num{font-family:var(--sans-alt);font-size:.72rem;color:var(--fg-faint);}
+.sec-head h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;color:var(--fg);}
+#design{display:flex;flex-direction:column;padding-top:64px;overflow:hidden;}
+#design .sec-head{flex-shrink:0;}
+.design-gallery{flex:1;position:relative;overflow:hidden;}
+.design-track{position:absolute;top:0;left:0;height:100%;display:flex;gap:2px;transition:transform .35s ease-out;will-change:transform;}
+.d-item{height:100%;flex-shrink:0;position:relative;overflow:hidden;cursor:none;background:var(--bg-panel);}
+.d-img{height:100%;width:auto;display:block;object-fit:cover;filter:grayscale(100%) brightness(.55) contrast(1.05);transition:filter .18s linear;}
+.d-item:hover .d-img{filter:grayscale(0%) brightness(1.05) contrast(1);}
+.d-label{position:absolute;bottom:0;left:0;right:0;padding:12px 15px;font-size:.74rem;text-transform:uppercase;background:var(--accent);color:var(--accent-fg);transform:translateY(100%);transition:transform .18s cubic-bezier(.77,0,.18,1);pointer-events:none;}
+.d-cat{font-size:.64rem;color:rgba(11,12,10,.7);display:block;margin-top:2px;}
+.d-item:hover .d-label{transform:translateY(0);}
+.d-num{position:absolute;top:11px;left:13px;font-family:var(--sans-alt);font-size:.64rem;color:var(--fg);opacity:0;transition:opacity .15s;pointer-events:none;}
+.d-item:hover .d-num{opacity:1;}
+
+/* LIGHTBOX */
+#lightbox{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+#lightbox.open{opacity:1;pointer-events:all;}
+#lightbox img{max-width:88vw;max-height:88vh;object-fit:contain;display:block;}
+#lightbox-close{position:absolute;top:26px;right:30px;font-size:.8rem;text-transform:uppercase;color:var(--fg);background:none;border:1px solid var(--line-strong);padding:9px 18px;cursor:pointer;}
+#lightbox-close:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ===== NOTES ===== */
+.notes-wrap{padding:36px 32px;max-width:680px;}
+.about-block{border-left:2px solid var(--accent);padding:4px 0 4px 22px;}
+.about-location{font-size:.9rem;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-faint);margin-bottom:24px!important;}
+.about-motto{color:var(--fg-dim);margin-bottom:0!important;margin-top:8px;}
+.note-text{font-size:1.05rem;line-height:1.8;color:var(--fg);letter-spacing:-.01em;max-width:58ch;margin-bottom:20px;}
+.note-text em{color:var(--accent);font-style:normal;}
+
+/* ===== CONTACT ===== */
+.c-grid{display:grid;grid-template-columns:1fr 1fr;}
+.c-col{padding:32px;border-right:1px solid var(--line);}
+.c-col:last-child{border-right:none;}
+.c-head{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-faint);margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:12px;}
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.02em;color:var(--fg-faint);margin-bottom:7px;}
+.field input,.field textarea,.field select{width:100%;background:var(--bg-panel);border:1px solid var(--line-strong);color:var(--fg);font-family:var(--f);font-size:.94rem;padding:10px 12px;outline:none;transition:border-color .12s;}
+.field select option{background:var(--bg);}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);}
+.field textarea{resize:none;height:84px;}
+.btn{font-size:.8rem;text-transform:uppercase;padding:13px 26px;border:1px solid var(--fg-dim);background:transparent;color:var(--fg);cursor:none;text-decoration:none;display:inline-block;transition:background .1s,color .1s,border-color .1s;}
+.btn-accent{border-color:var(--accent);background:var(--accent);color:var(--accent-fg);}
+.btn-accent:hover{background:transparent;color:var(--accent);}
+.c-link-item{margin-bottom:18px;}
+.c-link-item .lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.02em;color:var(--fg-faint);display:block;margin-bottom:5px;}
+.c-link-item a{color:var(--fg);text-decoration:none;font-size:.98rem;border-bottom:1px solid transparent;transition:color .1s,border-color .1s;}
+.c-link-item a:hover{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* CONTACT — the one section with an inverted background: a dark, saturated olive
+   instead of near-black. Same contrast logic as the rest of the site (light text,
+   green accent highlights) — just on a colored ground instead of black. */
+#contact{
+  background:#333d19;
+  --line:rgba(199,200,191,.16);
+  --line-strong:rgba(199,200,191,.28);
+}
+#contact .sec-head{background:#333d19;}
+#contact .sec-num,#contact h2{color:var(--fg);}
+#contact .c-head{color:var(--fg-dim);}
+#contact .field label{color:var(--fg-dim);}
+#contact .field input,#contact .field textarea,#contact .field select{background:rgba(0,0,0,.3);color:var(--fg);}
+#contact .field input:focus,#contact .field textarea:focus,#contact .field select:focus{border-color:var(--accent);}
+#contact .field select option{background:#1c2110;}
+#contact .btn.btn-accent{background:var(--accent);color:#0b0c0a;border-color:var(--accent);}
+#contact .btn.btn-accent:hover{background:transparent;color:var(--accent);}
+#contact .c-link-item .lbl{color:var(--fg-dim);}
+#contact .c-link-item a{color:var(--fg);}
+#contact .c-link-item a:hover{color:var(--accent);border-bottom-color:var(--accent);}
+#contact .c-link-note{color:var(--fg-dim);}
+.c-link-note{font-size:.92rem;color:var(--fg-dim);line-height:1.6;margin-top:4px;}
+
+/* mobile-only */
+#mob-nav{display:none;}
+
+@media (max-width:760px){
+  #cur-h,#cur-v,#cur-coord{display:none;}
+  #topbar{padding:calc(env(safe-area-inset-top,0px) + 0px) 16px 0;height:calc(56px + env(safe-area-inset-top,0px));}
+  #topbar .logo{font-size:.92rem;}
+  #topbar nav{display:none;}
+  #supportBtn{font-size:.66rem;padding:7px 12px;}
+  #mob-menu-btn{display:flex;margin-left:10px;}
+  .malvinas-img{width:130px;}
+
+  #mob-nav{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:22px;position:fixed;inset:calc(56px + env(safe-area-inset-top,0px)) 0 0 0;background:var(--bg);z-index:59;padding:0 26px;transform:translateX(100%);transition:transform .3s cubic-bezier(.77,0,.18,1);border-top:2px solid var(--line-strong);}
+  #mob-nav.open{transform:translateX(0);}
+  #mob-nav a{font-size:1.8rem;font-weight:900;text-transform:uppercase;letter-spacing:-.03em;text-decoration:none;color:var(--fg);display:block;padding:8px 0;}
+  #mob-nav a.active{color:var(--accent);}
+
+  .page{padding-top:calc(56px + env(safe-area-inset-top,0px));}
+  .h-title{font-size:clamp(2.4rem,16vw,4.2rem);}
+  .h-cover-btn{width:74vw;}
+  .h-buy-sm{font-size:.68rem;padding:9px 14px;}
+  .h-meta{left:16px;bottom:calc(70px + env(safe-area-inset-bottom,0px));}
+  .h-arrow{width:44px;height:44px;font-size:1rem;}
+  .h-arrow-l{left:6px;}
+  .h-arrow-r{right:6px;}
+  .h-nav{bottom:calc(16px + env(safe-area-inset-bottom,0px));}
+
+  .sec-head{padding:22px 18px 16px;flex-direction:column;align-items:flex-start;gap:14px;}
+  #design{padding-top:calc(56px + env(safe-area-inset-top,0px));}
+  .design-gallery{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .design-track{position:static;transition:none;height:52vh;gap:2px;}
+
+  .notes-wrap{padding:22px 18px;}
+
+  .c-grid{grid-template-columns:1fr;}
+  .c-col{border-right:none;border-bottom:1px solid var(--line);padding:22px 18px;}
+  .c-col:last-child{border-bottom:none;}
+  .field input,.field textarea,.field select{font-size:16px;padding:12px;}
+  .btn{padding:15px 26px;}
+
+  #supportDrawer{width:100%;padding:calc(76px + env(safe-area-inset-top,0px)) 22px calc(26px + env(safe-area-inset-bottom,0px));}
+  #supportClose{width:40px;height:40px;top:calc(20px + env(safe-area-inset-top,0px));}
+  .sup-btn{padding:15px 0;}
+  .player-inner{padding:0 16px calc(18px + env(safe-area-inset-bottom,0px));}
+  .player-head{padding:0 16px;}
+  .player-head-btns button{width:38px;height:38px;}
+  #playerFrame{height:280px;}
+  #lightbox-close{width:auto;padding:11px 18px;}
+}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div class="loader-frame">
+    <svg class="loader-ring" viewBox="0 0 150 150">
+      <circle cx="75" cy="75" r="71" fill="none" stroke="var(--line-strong)" stroke-width="1"/>
+      <circle id="loaderArc" cx="75" cy="75" r="71" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="446" stroke-dashoffset="446" transform="rotate(-90 75 75)"/>
+    </svg>
+    <img src="cursor-face.png" class="loader-face" alt="">
+  </div>
+  <div class="loader-coord" id="loaderCoord">LOCATING — X 000 Y 000</div>
+</div>
+<div id="cur-h"></div>
+<div id="cur-v"></div>
+<div id="cur-coord"></div>
+
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLB()">Close ✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div id="topbar">
+  <span class="logo">GENDEMA®</span>
+  <nav id="mainNav">
+    <a href="#" class="active" data-page="hero" onclick="goPage('hero',this,event)">Music</a>
+    <a href="#" data-page="design" onclick="goPage('design',this,event)">Design</a>
+    <a href="#" data-page="notes" onclick="goPage('notes',this,event)">About</a>
+    <a href="#" data-page="contact" onclick="goPage('contact',this,event)">Contact</a>
+  </nav>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <button id="supportBtn" onclick="toggleSupport(true)">Support</button>
+    <button id="mob-menu-btn" onclick="toggleMobNav()" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</div>
+
+<div id="mob-nav">
+  <a href="#" class="m-active" data-page="hero" onclick="goPage('hero',this,event);toggleMobNav()">Music</a>
+  <a href="#" data-page="design" onclick="goPage('design',this,event);toggleMobNav()">Design</a>
+  <a href="#" data-page="notes" onclick="goPage('notes',this,event);toggleMobNav()">About</a>
+  <a href="#" data-page="contact" onclick="goPage('contact',this,event);toggleMobNav()">Contact</a>
+</div>
+
+<div id="stage">
+
+  <!-- HERO / DISCOGRAPHY -->
+  <div class="page active" id="hero">
+    <div class="hero-stage" id="heroStage">
+
+      <div class="h-slide" data-i="0">
+        <div class="h-lights" style="--c1:#8a7a56;--c2:#28344a;--c3:#c9c2a8;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">Baumaso</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="1134657782" data-title="Baumaso" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-baumaso.jpg" alt="Baumaso — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://gendema.bandcamp.com/album/baumaso" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2026</span><span>10 tracks</span></div>
+      </div>
+
+      <div class="h-slide" data-i="1">
+        <div class="h-lights" style="--c1:#9c8f6e;--c2:#8fae3f;--c3:#c9c4b0;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">Where It<br>Hurts<br>Less</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="2381257023" data-title="Where It Hurts Less" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-wihl.jpg" alt="Where It Hurts Less — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://gendema.bandcamp.com/album/where-it-hurts-less" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2025</span><span>8 tracks</span></div>
+      </div>
+
+      <div class="h-slide" data-i="2">
+        <div class="h-lights" style="--c1:#3a5a3a;--c2:#d97b3f;--c3:#3a4a6b;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">sassy things</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="321063912" data-title="sassy things" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-sassy.jpg" alt="sassy things — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://noproblematapes.bandcamp.com/album/sassy-things" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2024</span><span>No Problema Tapes</span></div>
+      </div>
+
+      <div class="h-slide" data-i="3">
+        <div class="h-lights" style="--c1:#5b84b1;--c2:#7fae4a;--c3:#cfe0ee;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">Soberanía</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="1186859372" data-title="Soberanía" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-soberania.jpg" alt="Soberanía — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://gendema.bandcamp.com/album/soberan-a" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2023</span><span>9 tracks</span></div>
+      </div>
+
+      <div class="h-slide" data-i="4">
+        <div class="h-lights" style="--c1:#3a4a48;--c2:#d98aa0;--c3:#c4a83f;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">Grid casino</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="2499411328" data-title="Grid casino" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-gridcasino.jpg" alt="Grid casino — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://gendema.bandcamp.com/album/grid-casino" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2023</span><span>7 tracks</span></div>
+      </div>
+
+      <div class="h-slide" data-i="5">
+        <div class="h-lights" style="--c1:#5a6b4a;--c2:#b0b0ac;--c3:#c9502f;"><span class="light l1"></span><span class="light l2"></span><span class="light l3"></span></div>
+        <div class="h-title">KARAMBIT</div>
+        <div class="h-cover-col">
+        <button class="h-cover-btn" data-embed="2233954718" data-title="KARAMBIT" data-linkcol="8a9a4e">
+          <img class="h-cover" src="cover-karambit.jpg" alt="KARAMBIT — album cover">
+          <span class="h-play-hint">▸ Play album</span>
+        </button>
+        <a class="h-buy-sm" href="https://citymanproductions.bandcamp.com/album/karambit" target="_blank">Buy / Download ↗</a>
+        </div>
+        <div class="h-meta"><span class="h-year">2022</span><span>Cityman Productions</span></div>
+      </div>
+
+    </div>
+    <button id="heroPrev" class="h-arrow h-arrow-l" onclick="heroStep(-1)" aria-label="Previous">←</button>
+    <button id="heroNext" class="h-arrow h-arrow-r" onclick="heroStep(1)" aria-label="Next">→</button>
+    <div class="h-nav">
+      <span class="h-counter" id="heroCounter">01 — 06</span>
+    </div>
+  </div>
+
+  <!-- DESIGN -->
+  <div class="page" id="design">
+    <div class="sec-head">
+      <div><span class="sec-num">01</span><h2>Design &amp; Photography</h2></div>
+      <a href="#" class="hire-badge" onclick="goPage('contact',this,event)">Available for design work →</a>
+    </div>
+    <div class="design-gallery" id="designGallery">
+      <div class="design-track" id="designTrack">
+        <div class="d-item" onclick="openLB('img1.png')">
+          <img class="d-img" src="img1.png" alt="Work 01"><span class="d-num">01</span>
+          <div class="d-label">NU-MARTYR<span class="d-cat">Music Artwork — 2026</span></div>
+        </div>
+        <div class="d-item" onclick="openLB('img2.png')">
+          <img class="d-img" src="img2.png" alt="Work 02"><span class="d-num">02</span>
+          <div class="d-label">ENVIOUS - Design Expo.<span class="d-cat">Square Flyer — 2025</span></div>
+        </div>
+        <div class="d-item" onclick="openLB('img3.png')">
+          <img class="d-img" src="img3.png" alt="Work 03"><span class="d-num">03</span>
+          <div class="d-label">Etrae (LP)<span class="d-cat">Music Artwork (LP Back) — 2026</span></div>
+        </div>
+        <div class="d-item" onclick="openLB('img4.png')">
+          <img class="d-img" src="img4.png" alt="Work 04"><span class="d-num">04</span>
+          <div class="d-label">SᓰᘜᓰᒪᓰSᘻ™<span class="d-cat">Poster Series — 2026</span></div>
+        </div>
+        <div class="d-item" onclick="openLB('img5.png')">
+          <img class="d-img" src="img5.png" alt="Work 05"><span class="d-num">05</span>
+          <div class="d-label">Obvious Conditions : Raw Hikes<span class="d-cat">Music Artwork — 2025</span></div>
+        </div>
+        <div class="d-item" onclick="openLB('img6.png')">
+          <img class="d-img" src="img6.png" alt="Work 06"><span class="d-num">06</span>
+          <div class="d-label">Ausdauer : H.Besler (LP)<span class="d-cat">Music Artwork — 2025</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="page" id="notes">
+    <div class="sec-head"><div><span class="sec-num">02</span><h2>About</h2></div></div>
+    <div class="notes-wrap">
+      <div class="about-block">
+        <p class="note-text about-location">Morón, Buenos Aires - Argentina.</p>
+        <p class="note-text">Gendema makes music and design the same way — alone, in one sitting, with no vote and no audience until it's finished. What doesn't survive that room doesn't get released.</p>
+        <p class="note-text">Order isn't a limitation to him; it's the closest thing he has to a creed — gut and structure before explanation. Faith and precision run under most of what he makes, because one creates as one lives. He'd rather the work answer for him than the other way around.</p>
+        <p class="note-text about-motto">𝙁𝙞𝙙𝙚𝙨 𝙣𝙤𝙣 𝙙𝙚𝙛𝙞𝙘𝙞𝙩.</p>
+      </div>
+      <div class="malvinas-wrap">
+        <img class="malvinas-img" src="malvinas.png" alt="Islas Malvinas">
+        <div id="malvinas-tip">SIEMPRE SERÁN ARGENTINAS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="page" id="contact">
+    <div class="sec-head"><div><span class="sec-num">03</span><h2>Contact &amp; Booking</h2></div></div>
+    <div class="c-grid">
+      <div class="c-col">
+        <div class="c-head">Send a message</div>
+        <div class="field"><label>Name</label><input id="cf-name" type="text" placeholder="Your name" required></div>
+        <div class="field"><label>Email</label><input id="cf-email" type="email" placeholder="your@email.com" required></div>
+        <div class="field"><label>Inquiry type</label>
+          <select id="cf-type">
+            <option value="">Select —</option>
+            <option>Booking / Live Show</option>
+            <option>Music Collaboration</option>
+            <option>Design Project</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Message</label><textarea id="cf-msg" placeholder="Your message..." required></textarea></div>
+        <button class="btn btn-accent" style="margin-top:8px" onclick="sendForm(event)">Send →</button>
+        <p id="cf-status" style="margin-top:12px;font-size:.72rem;text-transform:uppercase;color:var(--accent);display:none;"></p>
+      </div>
+      <div class="c-col">
+        <div class="c-head">Direct</div>
+        <div class="c-link-item"><span class="lbl">Email</span><a href="mailto:gendema@tuta.io">gendema@tuta.io</a></div>
+        <div class="c-link-item"><span class="lbl">Instagram</span><a href="https://instagram.com/ggendema" target="_blank">@ggendema</a></div>
+        <div class="c-link-item"><span class="lbl">Bandcamp</span><a href="https://gendema.bandcamp.com" target="_blank">gendema.bandcamp.com</a></div>
+        <div class="c-link-item" style="margin-top:28px"><span class="lbl">Booking</span>
+          <p class="c-link-note">For live shows, festivals, residencies or collaborations, write directly or use the form indicating "Booking".</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PLAYER DRAWER -->
+<div id="playerDrawer">
+  <div class="player-head" id="playerHead">
+    <span id="playerTitle"></span>
+    <div class="player-head-btns">
+      <button id="playerMinBtn" onclick="toggleMinimizePlayer()" aria-label="Minimize">–</button>
+      <button onclick="closePlayer()" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="player-inner">
+    <iframe id="playerFrame" src="" seamless></iframe>
+  </div>
+</div>
+
+<!-- SUPPORT DRAWER -->
+<div id="supportDrawer">
+  <button id="supportClose" onclick="toggleSupport(false)" aria-label="Close">✕</button>
+  <h3>Support the work</h3>
+  <p>If the music or design brought you something, consider contributing directly — any amount matters.</p>
+  <div class="sup-block">
+    <div class="sup-label">Bitcoin</div>
+    <div class="btc-addr" id="btcAddr">bc1qkxljlnp8wr5san5u0fvfqgta7zk5ejjp98mwkgs</div>
+    <button class="sup-btn" id="cpBtn" onclick="cpBTC()"><span id="cpTxt">Copy address ₿</span></button>
+  </div>
+  <div class="sup-block">
+    <div class="sup-label">PayPal</div>
+    <a href="https://paypal.me/gascondior" target="_blank" class="sup-btn solid">Donate via PayPal →</a>
+  </div>
+</div>
+
+<script>
+/* LOADER */
+(function(){
+  const loader=document.getElementById('loader');
+  const arc=document.getElementById('loaderArc');
+  const coord=document.getElementById('loaderCoord');
+  const CIRC=446;
+  let pct=0;
+  const timer=setInterval(()=>{
+    pct=Math.min(100,pct+4+Math.random()*9);
+    arc.style.strokeDashoffset=String(CIRC-(CIRC*pct/100));
+    coord.textContent='LOCATING — X '+Math.round(pct*3.6)+' Y '+Math.round(pct*2.1);
+    if(pct>=100){
+      clearInterval(timer);
+      coord.textContent='WELCOME';
+      setTimeout(()=>{
+        loader.classList.add('done');
+        setTimeout(()=>loader.remove(),750);
+      },300);
+    }
+  },110);
+})();
+
+/* CROSSHAIR CURSOR */
+const curH=document.getElementById('cur-h');
+const curV=document.getElementById('cur-v');
+const curCoord=document.getElementById('cur-coord');
+document.addEventListener('mousemove',e=>{
+  curH.style.top=e.clientY+'px';
+  curV.style.left=e.clientX+'px';
+  curCoord.style.left=e.clientX+'px';
+  curCoord.style.top=e.clientY+'px';
+  curCoord.textContent='X '+e.clientX+' — Y '+e.clientY;
+});
+/* A cross-origin iframe (the Bandcamp player) is a separate browsing context — the
+   browser never reports mousemove once the pointer is over it, which is why the
+   crosshair used to freeze in place there. There's no way to track it inside the
+   iframe, so instead we just let it fade out cleanly and fade back in on return:
+   when the pointer leaves the document with no relatedTarget, it has crossed into
+   an iframe (or off the window); mouseover on the document means it's back. */
+document.addEventListener('mouseout',e=>{
+  if(!e.relatedTarget){
+    curH.classList.add('cur-hidden');curV.classList.add('cur-hidden');curCoord.classList.add('cur-hidden');
+  }
+});
+document.addEventListener('mouseover',()=>{
+  curH.classList.remove('cur-hidden');curV.classList.remove('cur-hidden');curCoord.classList.remove('cur-hidden');
+});
+function refreshCursorTargets(){
+  document.querySelectorAll('a,button,.d-item').forEach(el=>{
+    el.removeEventListener('mouseenter',growCur);el.removeEventListener('mouseleave',shrinkCur);
+    el.addEventListener('mouseenter',growCur);el.addEventListener('mouseleave',shrinkCur);
+  });
+}
+function growCur(){curH.classList.add('hot');curV.classList.add('hot');}
+function shrinkCur(){curH.classList.remove('hot');curV.classList.remove('hot');}
+refreshCursorTargets();
+
+/* The Bandcamp iframe is a separate origin — it captures its own mouse events, so our
+   crosshair simply can't track the cursor once it's inside. Hiding it cleanly on
+   enter/leave beats leaving it frozen at the last known position. */
+const playerFrameEl=document.getElementById('playerFrame');
+playerFrameEl.addEventListener('mouseenter',()=>{
+  curH.style.opacity='0';curV.style.opacity='0';curCoord.style.opacity='0';
+});
+playerFrameEl.addEventListener('mouseleave',()=>{
+  curH.style.opacity='1';curV.style.opacity='1';curCoord.style.opacity='1';
+});
+
+/* NAV / PAGE SWITCH */
+function goPage(id,link,e){
+  if(e)e.preventDefault();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('#mainNav a,#mob-nav a').forEach(a=>a.classList.remove('active','m-active'));
+  document.querySelectorAll(`#mainNav a[data-page="${id}"]`).forEach(a=>a.classList.add('active'));
+  document.querySelectorAll(`#mob-nav a[data-page="${id}"]`).forEach(a=>a.classList.add('m-active'));
+  document.body.classList.toggle('on-contact',id==='contact');
+}
+function toggleMobNav(){document.getElementById('mob-nav').classList.toggle('open');}
+
+/* HERO CAROUSEL */
+const heroSlides=document.querySelectorAll('.h-slide');
+let heroIndex=0;
+function renderHero(){
+  heroSlides.forEach((el,i)=>{el.style.transform=`translateX(${(i-heroIndex)*100}%)`;});
+  document.getElementById('heroCounter').textContent=String(heroIndex+1).padStart(2,'0')+' — '+String(heroSlides.length).padStart(2,'0');
+}
+function heroStep(dir){
+  heroIndex=(heroIndex+dir+heroSlides.length)%heroSlides.length;
+  renderHero();
+}
+renderHero();
+
+/* touch swipe — mobile-friendly way to move through the carousel besides the arrows */
+(function(){
+  const stage=document.getElementById('heroStage');
+  let startX=null;
+  stage.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;},{passive:true});
+  stage.addEventListener('touchend',e=>{
+    if(startX===null)return;
+    const dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40)heroStep(dx<0?1:-1);
+    startX=null;
+  },{passive:true});
+})();
+
+/* PARALLAX — layered depth: cover moves most (foreground), title a little
+   (midground), background lights barely move opposite (recedes) */
+document.addEventListener('mousemove',e=>{
+  if(!document.getElementById('hero').classList.contains('active'))return;
+  const relX=(e.clientX/window.innerWidth-.5);
+  const relY=(e.clientY/window.innerHeight-.5);
+  const active=heroSlides[heroIndex];
+  const col=active.querySelector('.h-cover-col');
+  const title=active.querySelector('.h-title');
+  const lights=active.querySelector('.h-lights');
+  if(col)col.style.transform=`translate(${relX*-26}px,${relY*-26}px)`;
+  if(title)title.style.transform=`translate(-50%,-50%) translate(${relX*14}px,${relY*14}px)`;
+  if(lights)lights.style.transform=`translate(${relX*10}px,${relY*10}px)`;
+});
+
+/* PLAYER DRAWER */
+document.querySelectorAll('.h-cover-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const embed=btn.dataset.embed;
+    const ext=btn.dataset.external;
+    if(embed){
+      const linkcol=btn.dataset.linkcol||'8a9a4e';
+      document.getElementById('playerFrame').src=`https://bandcamp.com/EmbeddedPlayer/album=${embed}/size=large/bgcol=14160f/linkcol=${linkcol}/tracklist=true/artwork=small/transparent=true/`;
+      document.getElementById('playerTitle').textContent=btn.dataset.title;
+      const d=document.getElementById('playerDrawer');
+      d.classList.remove('minimized');
+      d.classList.add('open');
+      document.getElementById('playerMinBtn').textContent='–';
+    }else if(ext){
+      window.open(ext,'_blank');
+    }
+  });
+});
+function toggleMinimizePlayer(){
+  const d=document.getElementById('playerDrawer');
+  if(!d.classList.contains('open'))return;
+  const nowMin=d.classList.toggle('minimized');
+  document.getElementById('playerMinBtn').textContent=nowMin?'▢':'–';
+}
+document.getElementById('playerHead').addEventListener('click',e=>{
+  if(e.target.closest('button'))return;
+  toggleMinimizePlayer();
+});
+function closePlayer(){
+  const d=document.getElementById('playerDrawer');
+  d.classList.remove('open','minimized');
+  document.getElementById('playerFrame').src='';
+}
+
+/* SUPPORT DRAWER */
+function toggleSupport(open){
+  document.getElementById('supportDrawer').classList.toggle('open',open);
+}
+const BTC='bc1qkxljlnp8wr5san5u0fvfqgta7zk5ejjp98mwkgs';
+function cpBTC(){
+  navigator.clipboard.writeText(BTC).then(()=>{
+    const b=document.getElementById('cpBtn'),t=document.getElementById('cpTxt');
+    b.classList.add('ok');t.textContent='Copied!';
+    setTimeout(()=>{b.classList.remove('ok');t.textContent='Copy address ₿';},2000);
+  });
+}
+
+/* DESIGN GALLERY — cursor-driven horizontal pan + lightbox */
+const designGallery=document.getElementById('designGallery');
+const designTrack=document.getElementById('designTrack');
+designGallery.addEventListener('mousemove',e=>{
+  if(window.innerWidth<=760)return;
+  const rect=designGallery.getBoundingClientRect();
+  const relX=Math.min(1,Math.max(0,(e.clientX-rect.left)/rect.width));
+  const maxScroll=Math.max(0,designTrack.scrollWidth-designGallery.clientWidth);
+  designTrack.style.transform=`translateX(${-relX*maxScroll}px)`;
+});
+function openLB(src){
+  document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('open');
+}
+function closeLB(){document.getElementById('lightbox').classList.remove('open');}
+document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this)closeLB();});
+
+/* CONTACT FORM */
+async function sendForm(e){
+  e.preventDefault();
+  const name=document.getElementById('cf-name').value.trim();
+  const email=document.getElementById('cf-email').value.trim();
+  const type=document.getElementById('cf-type').value;
+  const msg=document.getElementById('cf-msg').value.trim();
+  const status=document.getElementById('cf-status');
+  if(!name||!email||!msg){status.style.display='block';status.style.color='#c0463f';status.textContent='Please fill in name, email and message.';return;}
+  const btn=e.target;btn.textContent='Sending...';btn.disabled=true;
+  try{
+    const res=await fetch('https://formspree.io/f/mbdwvryr',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({name,email,type,message:msg})});
+    if(res.ok){
+      status.style.display='block';status.style.color='#0b0c0a';status.textContent='Message sent. Thank you.';
+      document.getElementById('cf-name').value='';document.getElementById('cf-email').value='';document.getElementById('cf-type').value='';document.getElementById('cf-msg').value='';
+    }else{throw new Error();}
+  }catch(err){status.style.display='block';status.style.color='#c0463f';status.textContent='Something went wrong. Try again or write directly.';}
+  btn.textContent='Send →';btn.disabled=false;
+}
+</script>
+</body>
+</html>
